@@ -8,35 +8,32 @@
 <body>
 
 <div class="layout">
-
   <div class="left-panel">
     <div class="top-controls">
-
       <button id="loadJsonBtn">Load JSON</button>
       <input type="file" id="jsonFileInput" accept=".json" style="display:none;">
 
-      <div>
+      <div class="date-controls-wrapper">
         <div class="date-group">
           <label>From</label>
           <input type="date" id="startDate">
         </div>
-
         <div class="date-group">
           <label>To &nbsp;&nbsp;&nbsp;</label>
           <input type="date" id="endDate">
         </div>
+        <button id="resetDatesBtn" title="Reset dates">&#8634;</button>
       </div>
-
     </div>
-
-    <div id="branches"></div>
     <div id="legend"></div>
   </div>
 
   <div class="chart-container">
-    <svg id="chart"></svg>
+    <div class="chart-wrapper">
+      <div id="branch-labels-sticky"></div>
+      <svg id="chart"></svg>
+    </div>
   </div>
-
 </div>
 
 <div class="release-table-container">
