@@ -184,3 +184,81 @@ body { font-family: Inter, Arial, sans-serif; background: #f8fafc; margin: 0; pa
 .date-group input:focus {
     border-color: #3b82f6;
 }
+
+/* ================= MODAL ================= */
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(4px);
+
+    display: none;
+    
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal {
+    background: white;
+    border-radius: 16px;
+    padding: 22px 24px;
+    width: 420px;
+    max-width: 90%;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+    position: relative;
+    animation: scaleIn 0.2s ease;
+    font-family: Inter, sans-serif;
+}
+
+.modal-close {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    border: none;
+    background: transparent;
+    font-size: 20px;
+    cursor: pointer;
+    color: #64748b;
+}
+
+.modal-close:hover {
+    color: #0f172a;
+}
+
+.modal-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: #0f172a;
+}
+
+.modal-row {
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+
+.modal-label {
+    font-weight: 600;
+    color: #475569;
+    margin-right: 6px;
+}
+
+.modal-value {
+    color: #0f172a;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
