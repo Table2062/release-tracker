@@ -87,6 +87,7 @@ function renderTable(tableData) {
 
     table.html(""); 
 
+    // Rendering Header (stessa logica di prima)
     const thead = table.append("thead").append("tr");
     ["Release", "P1 Deploy", "Branch", "Hybris version", "Start merge", "Start Stabilization", "Branch Unfreeze", "Note"].forEach(h => {
         thead.append("th").attr("class", "th-" + h.toLowerCase().replace(/ /g, "-")).text(h);
@@ -95,21 +96,14 @@ function renderTable(tableData) {
     const hScope = thead.append("th").attr("class", "th-scope");
     const scopeContainer = hScope.append("div").attr("class", "scope-header-content");
     scopeContainer.append("span").attr("class", "scope-title").text("Scope");
-    
     const ctrlWrap = scopeContainer.append("div").attr("class", "table-ctrl-wrap");
     ctrlWrap.append("span").attr("class", "t-counter").text(`${start+1}-${end} / ${total}`);
     
     ctrlWrap.append("input")
-        .attr("type", "number")
-        .attr("id", "rowCountInput")
-        .attr("value", currentNumRows)
-        .attr("min", "1")
-        .attr("max", total)
+        .attr("type", "number").attr("id", "rowCountInput").attr("value", currentNumRows)
+        .attr("min", "1").attr("max", total)
         .on("change", function() {
-            let val = parseInt(this.value);
-            if (val > total) val = total;
-            if (val < 1) val = 1;
-            currentNumRows = val;
+            currentNumRows = parseInt(this.value) || 1;
             tableStartIndex = 0; 
             render(filterData(currentData));
         });
@@ -125,19 +119,18 @@ function renderTable(tableData) {
     const tbody = table.append("tbody");
     const items = tableData.slice(start, end);
     
-    // Logica colori:
-    // Le ultime 3 della selezione corrente sono prev, current, next.
-    // Tutte le altre ricevono un colore dalla palette (0-9).
     items.forEach((d, i) => {
         let rowClass = "";
-        const reverseIdx = items.length - 1 - i; // 0 è l'ultima riga, 1 la penultima...
+        // Indice assoluto nel dataset originale
+        const absoluteIdx = start + i; 
 
-        if (reverseIdx === 0) rowClass = "row-next";
-        else if (reverseIdx === 1) rowClass = "row-current";
-        else if (reverseIdx === 2) rowClass = "row-prev";
+        // Verifichiamo se è una delle ultime 3 release assolute del file
+        if (absoluteIdx === total - 1) rowClass = "row-next";    // L'ultima (Grigio)
+        else if (absoluteIdx === total - 2) rowClass = "row-current"; // La penultima (Blu)
+        else if (absoluteIdx === total - 3) rowClass = "row-prev";    // La terzultima (Verde)
         else {
-            // Colore ciclico per le righe precedenti
-            rowClass = "row-cycle-" + (i % 10);
+            // Tutte le altre usano il ciclo pastello basato sull'indice assoluto
+            rowClass = "row-cycle-" + (absoluteIdx % 10);
         }
 
         const tr = tbody.append("tr").attr("class", rowClass);

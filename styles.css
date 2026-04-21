@@ -121,27 +121,27 @@ body { font-family: Inter, Arial, sans-serif; background: #f8fafc; margin: 0; pa
 .t-nav button:hover { background: #fffbeb; border-color: #d97706; }
 .t-nav button.off { opacity: 0.2; cursor: not-allowed; background: #f8fafc; border-color: #e2e8f0; }
 
-/* Colori Fissi per le ultime 3 della vista */
-.row-prev { background: #d1fae5 !important; }    /* Verde */
-.row-current { background: #bfdbfe !important; } /* Blu */
-.row-next { background: #e5e7eb !important; }    /* Grigio */
+/* Colori Fissi (Assegnati solo alle ultime 3 release assolute del JSON) */
+.row-prev { background: #d1fae5; }    /* Verde (Terzultima) */
+.row-current { background: #bfdbfe; } /* Blu (Penultima) */
+.row-next { background: #e5e7eb; }    /* Grigio (Ultima) */
 
-/* Palette Ciclica per le righe precedenti (Pastel) */
-.row-cycle-0 { background: #fff1f2; } /* Rosa */
-.row-cycle-1 { background: #fef9c3; } /* Giallo */
-.row-cycle-2 { background: #f0fdf4; } /* Smeraldo */
-.row-cycle-3 { background: #ecfeff; } /* Cyan */
-.row-cycle-4 { background: #f5f3ff; } /* Viola */
-.row-cycle-5 { background: #fff7ed; } /* Arancio */
-.row-cycle-6 { background: #fafaf9; } /* Caldo */
-.row-cycle-7 { background: #fdf2f8; } /* Fuchsia */
-.row-cycle-8 { background: #f0f9ff; } /* Sky */
-.row-cycle-9 { background: #fdf4ff; } /* Purple */
+/* Palette Ciclica per tutte le altre release */
+.row-cycle-0 { background: #fff1f2; } 
+.row-cycle-1 { background: #fef9c3; } 
+.row-cycle-2 { background: #f0fdf4; } 
+.row-cycle-3 { background: #ecfeff; } 
+.row-cycle-4 { background: #f5f3ff; } 
+.row-cycle-5 { background: #fff7ed; } 
+.row-cycle-6 { background: #fafaf9; } 
+.row-cycle-7 { background: #fdf2f8; } 
+.row-cycle-8 { background: #f0f9ff; } 
+.row-cycle-9 { background: #fdf4ff; } 
 
-/* Hover per mantenere leggibilità */
+/* Hover dinamico */
 #releaseTable tbody tr:hover {
-    filter: brightness(0.95);
-    transition: filter 0.2s;
+    filter: contrast(0.9) brightness(0.95);
+    transition: filter 0.15s;
 }
 
 .hidden { display: none; }
