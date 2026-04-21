@@ -79,7 +79,6 @@ function setDefaultDates(data) {
     document.getElementById("endDate").value = fmt(max);
 }
 
-// ================= AGGIORNAMENTO TABLE CON TOOLTIP =================
 function renderTable(tableData) {
     const table = d3.select("#releaseTable");
     table.html("");
@@ -95,45 +94,9 @@ function renderTable(tableData) {
 
     lastItems.forEach((d, i) => {
         const tr = tbody.append("tr").attr("class", "row-" + roles[i]);
-        const rowValues = [d.release, d.p1Deploy, d.branch, d.hybrisVersion, d.startMerge, d.startStabilization, d.unfreeze, d.note, d.scope];
-        
-        rowValues.forEach(text => {
-            const cellText = text || "";
-            const td = tr.append("td").text(cellText);
-
-            td.on("mouseenter", (event) => {
-                if (cellText === "") return;
-                tooltip.style("opacity", 1)
-                       .style("background", "rgba(255, 255, 255, 0.98)")
-                       .style("color", "#333")
-                       .style("border", "1px solid #94a3b8")
-                       .style("box-shadow", "0 10px 15px -3px rgba(0, 0, 0, 0.1)")
-                       .html(`<div style="max-width: 400px; word-wrap: break-word; line-height: 1.4;">${cellText}</div>`);
-            })
-            .on("mousemove", (event) => {
-                // Posizionamento Intelligente
-                const tooltipNode = tooltip.node();
-                const { width, height } = tooltipNode.getBoundingClientRect();
-                const padding = 20;
-
-                let left = event.clientX + padding;
-                let top = event.clientY + padding;
-
-                // Se esce a destra, spostalo a sinistra del cursore
-                if (left + width > window.innerWidth) {
-                    left = event.clientX - width - padding;
-                }
-
-                // Se esce in basso, spostalo sopra il cursore
-                if (top + height > window.innerHeight) {
-                    top = event.clientY - height - padding;
-                }
-
-                tooltip.style("left", left + "px").style("top", top + "px");
-            })
-            .on("mouseleave", () => {
-                tooltip.style("opacity", 0);
-            });
+        [d.release, d.p1Deploy, d.branch, d.hybrisVersion, d.startMerge, d.startStabilization, d.unfreeze, d.note, d.scope]
+        .forEach(text => {
+            tr.append("td").html(text ? text.replace(/\n/g, "<br>") : "");
         });
     });
 }
