@@ -9,6 +9,14 @@ let currentNumRows = 3;
 
 const parseDate = d3.timeParse("%Y-%m-%d");
 
+// ✅ FORMAT ISO (YYYY-MM-DD)
+function formatDateSafe(d) {
+    if (!d) return "";
+    const date = new Date(d);
+    if (isNaN(date)) return d;
+    return date.toISOString().split("T")[0];
+}
+
 const BASE = {
     branchSpacing: 140,
     topOffset: 120,
@@ -109,7 +117,7 @@ function setDefaultDates(data) {
 }
 
 /* ========================= */
-/* TABLE                     */
+/* TABLE (UNCHANGED)         */
 /* ========================= */
 
 function renderTable(tableData) {
@@ -174,7 +182,7 @@ function renderTable(tableData) {
 }
 
 /* ========================= */
-/* RENDER                    */
+/* RENDER (ONLY DATE FIX)    */
 /* ========================= */
 
 function render(data) {
@@ -249,7 +257,7 @@ function render(data) {
         g.append("line").attr("x1", 0).attr("x2", lastX).attr("y1", y).attr("y2", y).attr("stroke", "#eee");
     });
 
-    // EVENTS (unchanged)
+    // EVENTS
     (data.events || []).forEach(ev => {
         const y = bY[ev.branch]; 
         if (y === undefined) return;
@@ -269,8 +277,8 @@ function render(data) {
                 openModal(`
                     <div class="modal-title">${ev.label}</div>
                     <div class="modal-row"><span class="modal-label">Branch:</span><span class="modal-value">${ev.branch}</span></div>
-                    <div class="modal-row"><span class="modal-label">From:</span><span class="modal-value">${ev.dateFrom}</span></div>
-                    <div class="modal-row"><span class="modal-label">To:</span><span class="modal-value">${ev.dateTo}</span></div>
+                    <div class="modal-row"><span class="modal-label">From:</span><span class="modal-value">${formatDateSafe(ev.dateFrom)}</span></div>
+                    <div class="modal-row"><span class="modal-label">To:</span><span class="modal-value">${formatDateSafe(ev.dateTo)}</span></div>
                 `);
             });
 
@@ -318,17 +326,10 @@ function render(data) {
             const y1 = bY[l.from];
             const y2 = bY[l.to];
 
-            // ✅ SHIFT VERTICALE verso il target
             const distance = Math.abs(y2 - y1);
-
-            let midY;
-
-            // applico shift SOLO se attraversa almeno un branch
-            if (distance > BASE.branchSpacing * 1.1) {
-                midY = y1 + (y2 - y1) * 0.675;
-            } else {
-                midY = (y1 + y2) / 2;
-            }
+            let midY = distance > BASE.branchSpacing * 1.1
+                ? y1 + (y2 - y1) * 0.675
+                : (y1 + y2) / 2;
 
             const temp = g.append("text").text(l.label);
             const w = temp.node().getBBox().width + 20; 
@@ -346,7 +347,7 @@ function render(data) {
                 .on("click", () => {
                     openModal(`
                         <div class="modal-title">${l.label}</div>
-                        <div class="modal-row"><span class="modal-label">Date:</span><span class="modal-value">${l.date}</span></div>
+                        <div class="modal-row"><span class="modal-label">Date:</span><span class="modal-value">${formatDateSafe(l.date)}</span></div>
                         <div class="modal-row"><span class="modal-label">From:</span><span class="modal-value">${l.from}</span></div>
                         <div class="modal-row"><span class="modal-label">To:</span><span class="modal-value">${l.to}</span></div>
                         <div class="modal-row"><span class="modal-label">Type:</span><span class="modal-value">${l.type}</span></div>
@@ -372,7 +373,7 @@ function render(data) {
                 .attr("text-anchor", "middle")
                 .attr("fill", "white")
                 .style("font-size", "10px")
-                .text(l.date);
+                .text(formatDateSafe(l.date)); // ✅ FIX
         });
     });
 }
