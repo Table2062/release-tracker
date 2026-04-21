@@ -79,20 +79,62 @@ function setDefaultDates(data) {
     document.getElementById("endDate").value = fmt(max);
 }
 
+// ================= AGGIORNAMENTO TABLE CON TOOLTIP =================
 function renderTable(tableData) {
     const table = d3.select("#releaseTable");
     table.html("");
     if (!tableData || !Array.isArray(tableData)) return;
+
     const headers = ["Release", "P1 Deploy", "Branch", "Hybris version", "Start merge", "Start Stabilization", "Branch Unfreeze", "Note", "Scope"];
     const thead = table.append("thead").append("tr");
     headers.forEach(h => thead.append("th").text(h));
+
     const tbody = table.append("tbody");
     const lastItems = tableData.slice(-3);
     const roles = ["prev", "current", "next"];
+
     lastItems.forEach((d, i) => {
         const tr = tbody.append("tr").attr("class", "row-" + roles[i]);
-        [d.release, d.p1Deploy, d.branch, d.hybrisVersion, d.startMerge, d.startStabilization, d.unfreeze, d.note, d.scope]
-        .forEach(text => tr.append("td").text(text || ""));
+        const rowValues = [d.release, d.p1Deploy, d.branch, d.hybrisVersion, d.startMerge, d.startStabilization, d.unfreeze, d.note, d.scope];
+        
+        rowValues.forEach(text => {
+            const cellText = text || "";
+            const td = tr.append("td").text(cellText);
+
+            td.on("mouseenter", (event) => {
+                if (cellText === "") return;
+                tooltip.style("opacity", 1)
+                       .style("background", "rgba(255, 255, 255, 0.98)")
+                       .style("color", "#333")
+                       .style("border", "1px solid #94a3b8")
+                       .style("box-shadow", "0 10px 15px -3px rgba(0, 0, 0, 0.1)")
+                       .html(`<div style="max-width: 400px; word-wrap: break-word; line-height: 1.4;">${cellText}</div>`);
+            })
+            .on("mousemove", (event) => {
+                // Posizionamento Intelligente
+                const tooltipNode = tooltip.node();
+                const { width, height } = tooltipNode.getBoundingClientRect();
+                const padding = 20;
+
+                let left = event.clientX + padding;
+                let top = event.clientY + padding;
+
+                // Se esce a destra, spostalo a sinistra del cursore
+                if (left + width > window.innerWidth) {
+                    left = event.clientX - width - padding;
+                }
+
+                // Se esce in basso, spostalo sopra il cursore
+                if (top + height > window.innerHeight) {
+                    top = event.clientY - height - padding;
+                }
+
+                tooltip.style("left", left + "px").style("top", top + "px");
+            })
+            .on("mouseleave", () => {
+                tooltip.style("opacity", 0);
+            });
+        });
     });
 }
 
@@ -100,7 +142,6 @@ function render(data) {
     if (!data) return;
     renderTable(data["release-table"]);
     
-    // Rimuoviamo la dipendenza SCALE dall'altezza viewport per evitare scroll verticale forzato
     const SCALE = 1; 
     document.documentElement.style.setProperty('--ui-scale', SCALE);
 
@@ -151,8 +192,6 @@ function render(data) {
 
     const lastX = xP + 50 * SCALE;
     const chartHeight = TO + data.branches.length * BS;
-    
-    // Impostiamo altezza fissa dell'SVG basata sui branch
     svg.attr("width", lastX).attr("height", chartHeight).attr("viewBox", `0 0 ${lastX} ${chartHeight}`);
 
     g.append("line").attr("x1", 0).attr("x2", lastX).attr("y1", TLO).attr("y2", TLO).attr("stroke", "#000");
@@ -165,16 +204,11 @@ function render(data) {
     const bY = {};
     data.branches.forEach((b, i) => {
         const y = TO + i * BS; bY[b] = y;
-        
-        const label = stickyContainer.append("div")
-            .attr("class", "sticky-branch-label")
-            .style("top", `${y}px`);
-        
+        const label = stickyContainer.append("div").attr("class", "sticky-branch-label").style("top", `${y}px`);
         label.append("div").attr("class", "branch-box").text(b);
         g.append("line").attr("x1", 0).attr("x2", lastX).attr("y1", y).attr("y2", y).attr("stroke", "#eee");
     });
 
-    // Rettangoli Eventi
     data.events.forEach(ev => {
         const y = bY[ev.branch]; if (y === undefined) return;
         let xS = dateX[ev.dateFrom], xE = dateX[ev.dateTo];

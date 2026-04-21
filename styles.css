@@ -103,8 +103,7 @@ body { font-family: Inter, Arial, sans-serif; background: #f8fafc; margin: 0; pa
 .row-prev { background: #d1fae5; }
 .row-current { background: #bfdbfe; }
 .row-next { background: #e5e7eb; }
-
-.tooltip { position: fixed; background: rgba(0,0,0,0.8); color: white; padding: 8px; border-radius: 4px; pointer-events: none; opacity: 0; z-index: 1000; }
+.tooltip { position: fixed; background: white; color: #1e293b; padding: 12px; border-radius: 8px; pointer-events: none; opacity: 0; z-index: 9999;font-size: 13px; font-weight: 500; white-space: normal; transition: opacity 0.1s ease-out;}
 .pinned-tooltip { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 100; }
 .hidden { display: none; }
 #loadJsonBtn { cursor: pointer; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; font-weight: 600; }
