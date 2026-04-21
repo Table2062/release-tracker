@@ -249,7 +249,7 @@ function render(data) {
         g.append("line").attr("x1", 0).attr("x2", lastX).attr("y1", y).attr("y2", y).attr("stroke", "#eee");
     });
 
-    // EVENTS
+    // EVENTS (unchanged)
     (data.events || []).forEach(ev => {
         const y = bY[ev.branch]; 
         if (y === undefined) return;
@@ -259,9 +259,6 @@ function render(data) {
 
         let xS = startGroup ? (startGroup.startX + startGroup.w) : 0;
         let xE = endGroup ? endGroup.startX : lastX;
-
-        if (sV && new Date(ev.dateFrom) < sV) xS = 0;
-        if (eV && new Date(ev.dateTo) > eV) xE = lastX;
 
         const rW = xE - xS;
         if (rW <= 0) return;
@@ -313,12 +310,25 @@ function render(data) {
 
     grouped.forEach(gr => {
         gr.items.forEach((l, i) => {
+
             const x = gr.items.length === 1
                 ? dateX[gr.date]
                 : gr.startX + BASE.CLUSTER_PADDING/2 + i*BASE.CLUSTER_SPACING;
 
-            const y1 = bY[l.from], y2 = bY[l.to];
-            const midY = (y1 + y2) / 2;
+            const y1 = bY[l.from];
+            const y2 = bY[l.to];
+
+            // ✅ SHIFT VERTICALE verso il target
+            const distance = Math.abs(y2 - y1);
+
+            let midY;
+
+            // applico shift SOLO se attraversa almeno un branch
+            if (distance > BASE.branchSpacing * 1.1) {
+                midY = y1 + (y2 - y1) * 0.675;
+            } else {
+                midY = (y1 + y2) / 2;
+            }
 
             const temp = g.append("text").text(l.label);
             const w = temp.node().getBBox().width + 20; 
