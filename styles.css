@@ -1,5 +1,5 @@
 :root { --ui-scale: 1; }
-body { font-family: Inter, Arial, sans-serif; background: #f8fafc; margin: 0; padding: 16px; }
+body { font-family: Inter, Arial, sans-serif; background: #f8fafc; margin: 0; padding: 16px; overflow-x: hidden; }
 
 .layout { display: flex; gap: 20px; align-items: flex-start; }
 .left-panel { width: 240px; flex-shrink: 0; position: sticky; top: 16px; }
@@ -12,12 +12,7 @@ body { font-family: Inter, Arial, sans-serif; background: #f8fafc; margin: 0; pa
     border: 1px solid #e2e8f0;
     border-radius: 8px;
 }
-
-.chart-wrapper {
-    position: relative;
-    display: flex;
-    min-width: fit-content;
-}
+.chart-wrapper { position: relative; display: flex; min-width: fit-content; }
 
 #branch-labels-sticky {
     position: sticky;
@@ -28,7 +23,6 @@ body { font-family: Inter, Arial, sans-serif; background: #f8fafc; margin: 0; pa
     border-right: 1px solid #eee;
     pointer-events: none;
 }
-
 .sticky-branch-label {
     position: absolute;
     left: 10px;
@@ -37,7 +31,6 @@ body { font-family: Inter, Arial, sans-serif; background: #f8fafc; margin: 0; pa
     display: flex;
     justify-content: center;
 }
-
 .branch-box {
     background: white;
     border: 1px solid #e2e8f0;
@@ -49,7 +42,6 @@ body { font-family: Inter, Arial, sans-serif; background: #f8fafc; margin: 0; pa
     white-space: nowrap;
     pointer-events: auto;
 }
-
 #chart { display: block; flex-shrink: 0; }
 
 .top-controls { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
@@ -63,7 +55,6 @@ body { font-family: Inter, Arial, sans-serif; background: #f8fafc; margin: 0; pa
     flex-direction: column;
     gap: 6px;
 }
-
 #resetDatesBtn {
     position: absolute;
     top: -10px;
@@ -78,11 +69,7 @@ body { font-family: Inter, Arial, sans-serif; background: #f8fafc; margin: 0; pa
     align-items: center;
     justify-content: center;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    font-size: 16px;
 }
-
-.date-group { display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
-.date-group input { font-size: 11px; border: 1px solid #e2e8f0; border-radius: 4px; padding: 2px; }
 
 .timeline-date { fill: #dbeafe; stroke: #93c5fd; }
 .timeline-text { font-size: 12px; font-weight: 700; fill: #1d4ed8; }
@@ -91,26 +78,109 @@ body { font-family: Inter, Arial, sans-serif; background: #f8fafc; margin: 0; pa
 .legend-row { display: flex; align-items: center; gap: 6px; font-size: 12px; margin-bottom: 4px; }
 .legend-color { width: 10px; height: 10px; border-radius: 3px; }
 
-/* TABELLA ESPANSA VERTICALMENTE */
-.release-table-container { margin-top: 30px; }
-#releaseTable { width: 100%; border-collapse: collapse; background: white; font-size: 12px; table-layout: fixed;}
-#releaseTable th { background: #d97706; color: white; padding: 10px; text-align: left; font-weight: 600;}
+/* TABLE CUSTOMIZATION */
+.release-table-container { margin-top: 30px; width: 100%; overflow: hidden; }
+#releaseTable { width: 100%; border-collapse: collapse; background: white; font-size: 11px; }
+#releaseTable th { background: #d97706; color: white; padding: 10px; text-align: left; font-weight: 600; }
+#releaseTable td { padding: 10px; border-top: 1px solid #eee; white-space: normal; word-wrap: break-word; vertical-align: top; line-height: 1.4; }
 
-#releaseTable td { 
-    padding: 10px; 
-    border-top: 1px solid #eee; 
-    /* Testo visibile per intero */
-    white-space: normal; 
-    word-wrap: break-word;
-    vertical-align: top;
-    line-height: 1.4;
+/* COLUMNS WIDTHS */
+.th-release { width: 180px; }
+.th-p1-deploy { width: 80px; }
+.th-branch { width: 120px; }
+.th-hybris-version { width: 100px; }
+.th-start-merge { width: 70px; font-size: 10px; } /* Più stretta */
+.th-start-stabilization { width: 70px; font-size: 10px; } /* Più stretta */
+.th-branch-unfreeze { width: 90px; }
+.th-note { width: 300px; } /* Più larga */
+
+.th-scope { 
+    width: 300px; 
+    min-width: 300px;
 }
 
-.row-prev { background: #d1fae5; }
-.row-current { background: #bfdbfe; }
-.row-next { background: #e5e7eb; }
+.scope-header-content { display: flex; align-items: center; justify-content: space-between; height: 100%; }
+.scope-title { font-weight: 600; }
+.table-ctrl-wrap { display: flex; align-items: center; gap: 12px; }
+.t-counter { 
+    font-size: 11px; font-weight: 500; white-space: nowrap; 
+    background: rgba(0,0,0,0.1); padding: 2px 8px; border-radius: 12px; 
+}
 
-.tooltip { position: fixed; background: rgba(0,0,0,0.8); color: white; padding: 8px; border-radius: 4px; pointer-events: none; opacity: 0; z-index: 1000; }
-.pinned-tooltip { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 100; }
+#rowCountInput { 
+    width: 45px; height: 28px; border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; 
+    font-size: 14px; text-align: center; outline: none; background: white; color: #333; font-weight: bold; 
+}
+
+.t-nav { display: flex; gap: 4px; }
+.t-nav button { 
+    background: white; border: 1px solid #cbd5e1; border-radius: 4px; color: #d97706; 
+    font-size: 14px; padding: 4px 12px; cursor: pointer; line-height: 1; 
+    display: flex; align-items: center; justify-content: center; transition: background 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.1); 
+}
+.t-nav button:hover { background: #fffbeb; border-color: #d97706; }
+.t-nav button.off { opacity: 0.2; cursor: not-allowed; background: #f8fafc; border-color: #e2e8f0; }
+
+/* Colori Fissi per le ultime 3 della vista */
+.row-prev { background: #d1fae5 !important; }    /* Verde */
+.row-current { background: #bfdbfe !important; } /* Blu */
+.row-next { background: #e5e7eb !important; }    /* Grigio */
+
+/* Palette Ciclica per le righe precedenti (Pastel) */
+.row-cycle-0 { background: #fff1f2; } /* Rosa */
+.row-cycle-1 { background: #fef9c3; } /* Giallo */
+.row-cycle-2 { background: #f0fdf4; } /* Smeraldo */
+.row-cycle-3 { background: #ecfeff; } /* Cyan */
+.row-cycle-4 { background: #f5f3ff; } /* Viola */
+.row-cycle-5 { background: #fff7ed; } /* Arancio */
+.row-cycle-6 { background: #fafaf9; } /* Caldo */
+.row-cycle-7 { background: #fdf2f8; } /* Fuchsia */
+.row-cycle-8 { background: #f0f9ff; } /* Sky */
+.row-cycle-9 { background: #fdf4ff; } /* Purple */
+
+/* Hover per mantenere leggibilità */
+#releaseTable tbody tr:hover {
+    filter: brightness(0.95);
+    transition: filter 0.2s;
+}
+
 .hidden { display: none; }
+.pinned-tooltip { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 100; }
 #loadJsonBtn { cursor: pointer; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; font-weight: 600; }
+
+.date-controls-wrapper {
+    position: relative;
+    background: white;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px; /* Spazio verticale tra le righe */
+}
+
+.date-group {
+    display: flex;
+    align-items: center; /* Allineamento verticale centro */
+}
+
+.date-group label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+    width: 45px; /* Forza tutte le label alla stessa larghezza */
+    flex-shrink: 0; /* Impedisce alla label di rimpicciolirsi */
+}
+
+.date-group input {
+    font-size: 11px;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 3px;
+    width: 100%; /* L'input occupa lo spazio rimanente */
+    outline: none;
+}
+
+.date-group input:focus {
+    border-color: #3b82f6;
+}
