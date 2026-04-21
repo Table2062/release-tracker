@@ -22,7 +22,8 @@ const colors = {
     release: "#2196F3",
     hotfix: "#FF5722",
     fix: "#9C27B0",
-    downstream: "#FFC107"
+    downstream: "#FFC107",
+    upstream: "#607D8B"
 };
 
 function loadFromFile(file) {
