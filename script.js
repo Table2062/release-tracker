@@ -9,7 +9,7 @@ let currentNumRows = 3;
 
 const parseDate = d3.timeParse("%Y-%m-%d");
 
-// ✅ FORMAT ISO (YYYY-MM-DD)
+// ✅ FORMAT ISO
 function formatDateSafe(d) {
     if (!d) return "";
     const date = new Date(d);
@@ -80,8 +80,10 @@ function loadFromFile(file) {
 
 function filterData(data) {
     if (!data) return null;
+
     const sStr = document.getElementById("startDate").value;
     const eStr = document.getElementById("endDate").value;
+
     const sD = sStr ? new Date(sStr) : null;
     const eD = eStr ? new Date(eStr) : null;
 
@@ -99,7 +101,12 @@ function filterData(data) {
     fLinks.forEach(l => { used.add(l.from); used.add(l.to); });
     fEvents.forEach(ev => used.add(ev.branch));
 
-    return { ...data, links: fLinks, events: fEvents, branches: (data.branches || []).filter(b => used.has(b)) };
+    return {
+        ...data,
+        links: fLinks,
+        events: fEvents,
+        branches: (data.branches || []).filter(b => used.has(b))
+    };
 }
 
 function setDefaultDates(data) {
@@ -107,17 +114,32 @@ function setDefaultDates(data) {
         ...(data.links || []).map(l => new Date(l.date)),
         ...(data.events || []).flatMap(e => [new Date(e.dateFrom), new Date(e.dateTo)])
     ];
+
     if (!allD.length) return;
 
-    const min = new Date(Math.min(...allD)), max = new Date(Math.max(...allD));
+    const min = new Date(Math.min(...allD));
+    const max = new Date(Math.max(...allD));
+
     const fmt = d => d.toISOString().split("T")[0];
 
     document.getElementById("startDate").value = fmt(min);
     document.getElementById("endDate").value = fmt(max);
 }
 
+document.getElementById("startDate").addEventListener("change", () => {
+    if (currentData) {
+        render(filterData(currentData));
+    }
+});
+
+document.getElementById("endDate").addEventListener("change", () => {
+    if (currentData) {
+        render(filterData(currentData));
+    }
+});
+
 /* ========================= */
-/* TABLE (UNCHANGED)         */
+/* TABLE                     */
 /* ========================= */
 
 function renderTable(tableData) {
@@ -182,7 +204,7 @@ function renderTable(tableData) {
 }
 
 /* ========================= */
-/* RENDER (ONLY DATE FIX)    */
+/* RENDER (FIX FILTRO QUI)   */
 /* ========================= */
 
 function render(data) {
@@ -202,14 +224,32 @@ function render(data) {
 
     const BS = BASE.branchSpacing, TO = BASE.topOffset, TLO = BASE.timelineOffset;
 
+    // ✅ USA SOLO DATI GIÀ FILTRATI
     const sV = document.getElementById("startDate").value ? new Date(document.getElementById("startDate").value) : null;
     const eV = document.getElementById("endDate").value ? new Date(document.getElementById("endDate").value) : null;
 
     const tD = new Set();
-    (data.links || []).forEach(l => tD.add(l.date));
+
+    // ✅ SOLO date VISIBILI
+    (data.links || []).forEach(l => {
+        const d = new Date(l.date);
+        if ((!sV || d >= sV) && (!eV || d <= eV)) {
+            tD.add(l.date);
+        }
+    });
+
+    // ✅ eventi: aggiungo SOLO le parti visibili
     (data.events || []).forEach(ev => {
-        if (!sV || new Date(ev.dateFrom) >= sV) tD.add(ev.dateFrom);
-        if (!eV || new Date(ev.dateTo) <= eV) tD.add(ev.dateTo);
+        const dF = new Date(ev.dateFrom);
+        const dT = new Date(ev.dateTo);
+
+        if ((sV && dT < sV) || (eV && dF > eV)) return;
+
+        const visibleFrom = sV && dF < sV ? sV : dF;
+        const visibleTo = eV && dT > eV ? eV : dT;
+
+        tD.add(visibleFrom.toISOString().split("T")[0]);
+        tD.add(visibleTo.toISOString().split("T")[0]);
     });
 
     const grouped = Array.from(tD).map(d => ({
@@ -225,6 +265,41 @@ function render(data) {
     });
 
     let xP = 20;
+
+    // 🔥 padding dinamico INTELLIGENTE (basato su label reali)
+    let extraLeftPadding = 0;
+    let extraRightPadding = 0;
+
+    function measureLabelWidth(label) {
+        const temp = g.append("text")
+            .text(label)
+            .style("font-size", "12px"); // stesso stile dei link
+
+        const w = temp.node().getBBox().width;
+        temp.remove();
+
+        return w;
+    }
+
+    if (grouped.length > 0) {
+        const first = grouped[0];
+        const last = grouped[grouped.length - 1];
+
+        // 👉 LEFT
+        if (first.items && first.items.length > 0) {
+            const maxWidth = Math.max(...first.items.map(l => measureLabelWidth(l.label)));
+            extraLeftPadding = maxWidth / 2 + 20; // 👈 leggermente più spazio
+        }
+
+        // 👉 RIGHT
+        if (last.items && last.items.length > 0) {
+            const maxWidth = Math.max(...last.items.map(l => measureLabelWidth(l.label)));
+            extraRightPadding = maxWidth / 2 + 20;
+        }
+    }
+
+    xP += extraLeftPadding;
+
     const dateX = {};
 
     grouped.forEach((d, i) => {
@@ -237,39 +312,83 @@ function render(data) {
         xP += d.w;
     });
 
-    const lastX = xP + 50;
+    const lastX = xP + 50 + extraRightPadding;
     const chartHeight = TO + (data.branches || []).length * BS;
 
     svg.attr("width", lastX).attr("height", chartHeight);
 
-    g.append("line").attr("x1", 0).attr("x2", lastX).attr("y1", TLO).attr("y2", TLO).attr("stroke", "#000");
+    g.append("line")
+        .attr("x1", 0).attr("x2", lastX)
+        .attr("y1", TLO).attr("y2", TLO)
+        .attr("stroke", "#000");
 
     grouped.forEach(d => {
-        g.append("rect").attr("x", d.startX).attr("y", TLO - 10).attr("width", d.w).attr("height", 20).attr("rx", 6).attr("class", "timeline-date");
-        g.append("text").attr("x", d.startX + d.w/2).attr("y", TLO - 15).attr("text-anchor", "middle").attr("class", "timeline-text").text(d3.timeFormat("%d %b %Y")(d.dObj));
+        g.append("rect")
+            .attr("x", d.startX)
+            .attr("y", TLO - 10)
+            .attr("width", d.w)
+            .attr("height", 20)
+            .attr("rx", 6)
+            .attr("class", "timeline-date");
+
+        g.append("text")
+            .attr("x", d.startX + d.w/2)
+            .attr("y", TLO - 15)
+            .attr("text-anchor", "middle")
+            .attr("class", "timeline-text")
+            .text(d3.timeFormat("%d %b %Y")(d.dObj));
     });
 
     const bY = {};
     (data.branches || []).forEach((b, i) => {
         const y = TO + i * BS; 
         bY[b] = y;
-        stickyContainer.append("div").attr("class", "sticky-branch-label").style("top", `${y}px`).append("div").attr("class", "branch-box").text(b);
-        g.append("line").attr("x1", 0).attr("x2", lastX).attr("y1", y).attr("y2", y).attr("stroke", "#eee");
+
+        stickyContainer.append("div")
+            .attr("class", "sticky-branch-label")
+            .style("top", `${y}px`)
+            .append("div")
+            .attr("class", "branch-box")
+            .text(b);
+
+        g.append("line")
+            .attr("x1", 0).attr("x2", lastX)
+            .attr("y1", y).attr("y2", y)
+            .attr("stroke", "#eee");
     });
 
-    // EVENTS
+    // ===== EVENTS con bordo tratteggiato (SAFE) =====
     (data.events || []).forEach(ev => {
         const y = bY[ev.branch]; 
         if (y === undefined) return;
 
-        const startGroup = grouped.find(g => g.date === ev.dateFrom);
-        const endGroup = grouped.find(g => g.date === ev.dateTo);
+        const sV = document.getElementById("startDate").value ? new Date(document.getElementById("startDate").value) : null;
+        const eV = document.getElementById("endDate").value ? new Date(document.getElementById("endDate").value) : null;
+
+        const dF = new Date(ev.dateFrom);
+        const dT = new Date(ev.dateTo);
+
+        // fuori completamente → skip
+        if ((sV && dT < sV) || (eV && dF > eV)) return;
+
+        // clamp solo per visualizzazione
+        const visibleFrom = sV && dF < sV ? sV : dF;
+        const visibleTo = eV && dT > eV ? eV : dT;
+
+        const startKey = visibleFrom.toISOString().split("T")[0];
+        const endKey = visibleTo.toISOString().split("T")[0];
+
+        const startGroup = grouped.find(g => g.date === startKey);
+        const endGroup = grouped.find(g => g.date === endKey);
 
         let xS = startGroup ? (startGroup.startX + startGroup.w) : 0;
         let xE = endGroup ? endGroup.startX : lastX;
 
         const rW = xE - xS;
         if (rW <= 0) return;
+
+        const isCutLeft = sV && dF < sV;
+        const isCutRight = eV && dT > eV;
 
         const evG = g.append("g")
             .style("cursor", "pointer")
@@ -282,6 +401,7 @@ function render(data) {
                 `);
             });
 
+        // RECT BASE (identico al tuo)
         evG.append("rect")
             .attr("x", xS)
             .attr("y", y - 16)
@@ -291,6 +411,30 @@ function render(data) {
             .attr("fill-opacity", 0.15)
             .attr("stroke", ev.color)
             .attr("rx", 4);
+
+        // bordo tratteggiato SINISTRO
+        if (isCutLeft) {
+            evG.append("line")
+                .attr("x1", xS)
+                .attr("x2", xS)
+                .attr("y1", y - 16)
+                .attr("y2", y + 16)
+                .attr("stroke", ev.color)
+                .attr("stroke-width", 2)
+                .attr("stroke-dasharray", "4,3");
+        }
+
+        // bordo tratteggiato DESTRO
+        if (isCutRight) {
+            evG.append("line")
+                .attr("x1", xE)
+                .attr("x2", xE)
+                .attr("y1", y - 16)
+                .attr("y2", y + 16)
+                .attr("stroke", ev.color)
+                .attr("stroke-width", 2)
+                .attr("stroke-dasharray", "4,3");
+        }
 
         evG.append("text")
             .attr("x", xS + rW / 2)
@@ -373,7 +517,7 @@ function render(data) {
                 .attr("text-anchor", "middle")
                 .attr("fill", "white")
                 .style("font-size", "10px")
-                .text(formatDateSafe(l.date)); // ✅ FIX
+                .text(formatDateSafe(l.date));
         });
     });
 }
