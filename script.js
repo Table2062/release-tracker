@@ -138,6 +138,18 @@ document.getElementById("endDate").addEventListener("change", () => {
     }
 });
 
+function resetDateFilter() {
+    if (!currentData) return;
+
+    // ripristina range originale
+    setDefaultDates(currentData);
+
+    // 🔥 fondamentale: ri-render
+    render(filterData(currentData));
+}
+
+document.getElementById("resetDatesBtn").onclick = resetDateFilter;
+
 /* ========================= */
 /* TABLE                     */
 /* ========================= */
