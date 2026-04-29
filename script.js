@@ -137,6 +137,10 @@ document.getElementById("resetDatesBtn").onclick = () => {
     render(filterData(currentData));
 };
 
+document.getElementById("viewModeSwitch").addEventListener("change", () => {
+    if (currentData) render(filterData(currentData));
+});
+
 /* ========================= */
 /* TABLE                     */
 /* ========================= */
@@ -187,7 +191,6 @@ function renderTable(tableData) {
         let rowClass = "";
         const absoluteIdx = start + i;
         
-        // Logica Colori Ciclica e Speciale
         if (absoluteIdx === total - 1) rowClass = "row-next";
         else if (absoluteIdx === total - 2) rowClass = "row-current";
         else if (absoluteIdx === total - 3) rowClass = "row-prev";
@@ -208,16 +211,20 @@ function render(data) {
     renderTable(data["release-table"]);
     g.selectAll("*").remove();
     const stickyContainer = d3.select("#branch-labels-sticky").html("");
+    
+    const isEnvView = document.getElementById("viewModeSwitch").checked;
 
     const legendArea = d3.select("#legend").html("");
     
-    legendArea.append("div").attr("class", "legend-title").text("Links & Branches");
-    const legendBox = legendArea.append("div").attr("class", "legend-box");
-    Object.entries(colors).forEach(([k, c]) => {
-        const row = legendBox.append("div").attr("class", "legend-row");
-        row.append("div").attr("class", "legend-color").style("background", c);
-        row.append("div").text(k);
-    });
+    if (!isEnvView) {
+        legendArea.append("div").attr("class", "legend-title").text("Links & Branches");
+        const legendBox = legendArea.append("div").attr("class", "legend-box");
+        Object.entries(colors).forEach(([k, c]) => {
+            const row = legendBox.append("div").attr("class", "legend-row");
+            row.append("div").attr("class", "legend-color").style("background", c);
+            row.append("div").text(k);
+        });
+    }
 
     legendArea.append("div").attr("class", "legend-title").style("margin-top", "15px").text("Environments");
     const envLegendBox = legendArea.append("div").attr("class", "legend-box");
@@ -245,10 +252,13 @@ function render(data) {
     const todayObj = new Date(todayStr);
     if ((!sV || todayObj >= sV) && (!eV || todayObj <= eV)) tD.add(todayStr);
 
-    (data.links || []).forEach(l => {
-        const d = new Date(l.date);
-        if ((!sV || d >= sV) && (!eV || d <= eV)) tD.add(l.date);
-    });
+    if (!isEnvView) {
+        (data.links || []).forEach(l => {
+            const d = new Date(l.date);
+            if ((!sV || d >= sV) && (!eV || d <= eV)) tD.add(l.date);
+        });
+    }
+
     (data.events || []).forEach(ev => {
         const dF = new Date(ev.dateFrom), dT = new Date(ev.dateTo);
         if ((sV && dT < sV) || (eV && dF > eV)) return;
@@ -260,7 +270,7 @@ function render(data) {
 
     const grouped = Array.from(tD).map(d => ({
         date: d, dObj: parseDate(d),
-        items: (data.links || []).filter(l => l.date === d)
+        items: isEnvView ? [] : (data.links || []).filter(l => l.date === d)
     })).sort((a,b)=>a.dObj-b.dObj);
 
     grouped.forEach(gr => {
@@ -280,7 +290,19 @@ function render(data) {
     });
 
     const lastX = xP + 50;
-    const chartHeight = TO + (data.branches || []).length * BS;
+    
+    // LOGICA DI FILTRAGGIO ENTITIES (ENV o BRANCH)
+    let entities = [];
+    if (isEnvView) {
+        // Seleziona solo gli ambienti che hanno almeno un evento nel set filtrato
+        const activeEnvs = new Set((data.events || []).map(ev => ev.env));
+        entities = Object.keys(envColors).filter(env => activeEnvs.has(env));
+    } else {
+        entities = (data.branches || []);
+    }
+
+    const yMap = {};
+    const chartHeight = TO + entities.length * BS;
     svg.attr("width", lastX).attr("height", chartHeight);
 
     const todayData = grouped.find(g => g.date === todayStr);
@@ -300,21 +322,27 @@ function render(data) {
         g.append("text").attr("x", d.startX+d.w/2).attr("y", TLO-15).attr("text-anchor", "middle").attr("class", textClass).text(d3.timeFormat("%d %b %Y")(d.dObj));
     });
 
-    const bY = {};
-    (data.branches || []).forEach((b, i) => {
-        const y = TO + i * BS; bY[b] = y;
-        stickyContainer.append("div").attr("class", "sticky-branch-label").style("top", `${y}px`).append("div").attr("class", "branch-box").text(b);
+    entities.forEach((entity, i) => {
+        const y = TO + i * BS; 
+        yMap[entity] = y;
+        stickyContainer.append("div").attr("class", "sticky-branch-label").style("top", `${y}px`).append("div").attr("class", "branch-box").text(entity);
         g.append("line").attr("x1", 0).attr("x2", lastX).attr("y1", y).attr("y2", y).attr("stroke", "#eee");
     });
 
     (data.events || []).forEach(ev => {
-        const y = bY[ev.branch]; if (y === undefined) return;
+        const targetEntity = isEnvView ? ev.env : ev.branch;
+        const y = yMap[targetEntity]; 
+        if (y === undefined) return;
+
         const dF = new Date(ev.dateFrom), dT = new Date(ev.dateTo);
         if ((sV && dT < sV) || (eV && dF > eV)) return;
         const vF = sV && dF < sV ? sV : dF, vT = eV && dT > eV ? eV : dT;
         const sK = vF.toISOString().split("T")[0], eK = vT.toISOString().split("T")[0];
         const sG = grouped.find(g => g.date === sK), eG = grouped.find(g => g.date === eK);
-        let xS = sG ? (sG.startX + sG.w) : 0, xE = eG ? eG.startX : lastX;
+        
+        let xS = sG ? (isEnvView ? sG.startX + (sG.w/2) : sG.startX + sG.w) : 0, 
+            xE = eG ? (isEnvView ? eG.startX + (eG.w/2) : eG.startX) : lastX;
+        
         const rW = xE - xS; if (rW <= 0) return;
 
         const evColor = envColors[ev.env] || "#ccc";
@@ -325,37 +353,41 @@ function render(data) {
         evG.append("text").attr("x", xS + rW/2).attr("y", y+5).attr("text-anchor", "middle").style("font-size", "11px").style("font-weight", "600").text(ev.label);
     });
 
-    const defs = svg.append("defs");
-    Object.entries(colors).forEach(([k, c]) => {
-        defs.append("marker").attr("id", "arrow-"+k).attr("viewBox", "0 0 10 10").attr("refX", 10).attr("refY", 5).attr("markerWidth", 6).attr("markerHeight", 6).attr("orient", "auto").append("path").attr("d", "M0 0 L10 5 L0 10Z").attr("fill", c);
-    });
-
-    const linkLayer = g.append("g").attr("class", "links-layer");
-    grouped.forEach(gr => {
-        gr.items.forEach((l, i) => {
-            const x = gr.items.length === 1 ? dateX[gr.date] : gr.startX + BASE.CLUSTER_PADDING / 2 + i * BASE.CLUSTER_SPACING;
-            const y1 = bY[l.from], y2 = bY[l.to];
-            const midY = Math.abs(y2 - y1) > BS * 1.1 ? y1 + (y2 - y1) * 0.675 : (y1 + y2) / 2;
-            const color = colors[l.type] || "#ccc";
-
-            linkLayer.append("line").attr("x1", x).attr("y1", y1).attr("x2", x).attr("y2", y2).attr("stroke", color).attr("stroke-width", 2).attr("marker-end", `url(#arrow-${l.type})`);
-            
-            const temp = g.append("text").text(l.label).style("font-size", "11px").style("font-weight", "600");
-            const textW = temp.node().getBBox().width; temp.remove();
-            const dw = Math.max(textW + 85, 130), dh = 48;
-
-            const diamond = linkLayer.append("g").style("cursor", "pointer").on("click", () => {
-                openModal(`<div class="modal-title">${l.label}</div><div class="modal-row"><span class="modal-label">Date:</span>${l.date}</div><div class="modal-row"><span class="modal-label">From:</span>${l.from}</div><div class="modal-row"><span class="modal-label">To:</span>${l.to}</div><div class="modal-row"><span class="modal-label">Type:</span>${l.type}</div>`);
-            });
-            const hw = dw/2, hh = dh/2;
-            const hsl = d3.hsl(color);
-            const bgColor = d3.hsl(hsl.h, 0.3, 0.92).toString();
-
-            diamond.append("path").attr("d", `M${x-hw},${midY} L${x},${midY-hh} L${x+hw},${midY} L${x},${midY+hh} Z`).attr("fill", bgColor).attr("stroke", color).attr("stroke-width", 2.5);
-            diamond.append("text").attr("x", x).attr("y", midY+1).attr("text-anchor", "middle").style("font-size", "11px").style("font-weight", "700").attr("fill", "#1e293b").text(l.label);
-            diamond.append("text").attr("x", x).attr("y", midY+13).attr("text-anchor", "middle").style("font-size", "9px").style("font-weight", "600").attr("fill", "#475569").text(formatDateSafe(l.date));
+    if (!isEnvView) {
+        const defs = svg.append("defs");
+        Object.entries(colors).forEach(([k, c]) => {
+            defs.append("marker").attr("id", "arrow-"+k).attr("viewBox", "0 0 10 10").attr("refX", 10).attr("refY", 5).attr("markerWidth", 6).attr("markerHeight", 6).attr("orient", "auto").append("path").attr("d", "M0 0 L10 5 L0 10Z").attr("fill", c);
         });
-    });
+
+        const linkLayer = g.append("g").attr("class", "links-layer");
+        grouped.forEach(gr => {
+            gr.items.forEach((l, i) => {
+                const x = gr.items.length === 1 ? dateX[gr.date] : gr.startX + BASE.CLUSTER_PADDING / 2 + i * BASE.CLUSTER_SPACING;
+                const y1 = yMap[l.from], y2 = yMap[l.to];
+                if (y1 === undefined || y2 === undefined) return;
+
+                const midY = Math.abs(y2 - y1) > BS * 1.1 ? y1 + (y2 - y1) * 0.675 : (y1 + y2) / 2;
+                const color = colors[l.type] || "#ccc";
+
+                linkLayer.append("line").attr("x1", x).attr("y1", y1).attr("x2", x).attr("y2", y2).attr("stroke", color).attr("stroke-width", 2).attr("marker-end", `url(#arrow-${l.type})`);
+                
+                const temp = g.append("text").text(l.label).style("font-size", "11px").style("font-weight", "600");
+                const textW = temp.node().getBBox().width; temp.remove();
+                const dw = Math.max(textW + 85, 130), dh = 48;
+
+                const diamond = linkLayer.append("g").style("cursor", "pointer").on("click", () => {
+                    openModal(`<div class="modal-title">${l.label}</div><div class="modal-row"><span class="modal-label">Date:</span>${l.date}</div><div class="modal-row"><span class="modal-label">From:</span>${l.from}</div><div class="modal-row"><span class="modal-label">To:</span>${l.to}</div><div class="modal-row"><span class="modal-label">Type:</span>${l.type}</div>`);
+                });
+                const hw = dw/2, hh = dh/2;
+                const hsl = d3.hsl(color);
+                const bgColor = d3.hsl(hsl.h, 0.3, 0.92).toString();
+
+                diamond.append("path").attr("d", `M${x-hw},${midY} L${x},${midY-hh} L${x+hw},${midY} L${x},${midY+hh} Z`).attr("fill", bgColor).attr("stroke", color).attr("stroke-width", 2.5);
+                diamond.append("text").attr("x", x).attr("y", midY+1).attr("text-anchor", "middle").style("font-size", "11px").style("font-weight", "700").attr("fill", "#1e293b").text(l.label);
+                diamond.append("text").attr("x", x).attr("y", midY+13).attr("text-anchor", "middle").style("font-size", "9px").style("font-weight", "600").attr("fill", "#475569").text(formatDateSafe(l.date));
+            });
+        });
+    }
 }
 
 document.getElementById("loadJsonBtn").onclick = () => document.getElementById("jsonFileInput").click();

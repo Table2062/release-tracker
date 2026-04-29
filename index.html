@@ -1,16 +1,29 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="utf-8">
   <link rel="stylesheet" href="./styles.css">
   <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
+
 <body>
   <div class="layout">
     <div class="left-panel">
       <div class="top-controls">
         <button id="loadJsonBtn">Load JSON</button>
         <input type="file" id="jsonFileInput" accept=".json,application/json" style="display:none;">
+        <div class="view-switch-container">
+          <span class="switch-label">View</span>
+          <div class="switch-wrapper">
+            <span class="switch-text">Branches</span>
+            <label class="switch">
+              <input type="checkbox" id="viewModeSwitch">
+              <span class="slider"></span>
+            </label>
+            <span class="switch-text">Environments</span>
+          </div>
+        </div>
         <div class="date-controls-wrapper">
           <div class="date-group">
             <label>From</label>
@@ -45,4 +58,5 @@
   </div>
   <script src="./script.js"></script>
 </body>
+
 </html>
