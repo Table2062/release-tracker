@@ -1,20 +1,16 @@
 <!DOCTYPE html>
 <html>
-
 <head>
   <meta charset="utf-8">
   <link rel="stylesheet" href="./styles.css">
   <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
-
 <body>
-
   <div class="layout">
     <div class="left-panel">
       <div class="top-controls">
         <button id="loadJsonBtn">Load JSON</button>
         <input type="file" id="jsonFileInput" accept=".json,application/json" style="display:none;">
-
         <div class="date-controls-wrapper">
           <div class="date-group">
             <label>From</label>
@@ -29,7 +25,6 @@
       </div>
       <div id="legend"></div>
     </div>
-
     <div class="chart-container">
       <div class="chart-wrapper">
         <div id="branch-labels-sticky"></div>
@@ -37,11 +32,9 @@
       </div>
     </div>
   </div>
-
   <div class="release-table-container">
     <table id="releaseTable"></table>
   </div>
-
   <div id="tooltip" class="tooltip"></div>
   <div id="pinnedTooltip" class="pinned-tooltip hidden"></div>
   <div id="modalOverlay" class="modal-overlay">
@@ -50,8 +43,6 @@
       <div id="modalContent"></div>
     </div>
   </div>
-
   <script src="./script.js"></script>
 </body>
-
 </html>
