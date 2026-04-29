@@ -216,7 +216,7 @@ function render(data) {
     const legendArea = d3.select("#legend").html("");
     
     if (!isEnvView) {
-        legendArea.append("div").attr("class", "legend-title").text("Links & Branches");
+        legendArea.append("div").attr("class", "legend-title").text("Branches");
         const legendBox = legendArea.append("div").attr("class", "legend-box");
         Object.entries(colors).forEach(([k, c]) => {
             const row = legendBox.append("div").attr("class", "legend-row");
