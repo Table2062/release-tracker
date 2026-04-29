@@ -213,7 +213,6 @@ function render(data) {
     const stickyContainer = d3.select("#branch-labels-sticky").html("");
     
     const isEnvView = document.getElementById("viewModeSwitch").checked;
-
     const legendArea = d3.select("#legend").html("");
     
     if (!isEnvView) {
@@ -291,10 +290,8 @@ function render(data) {
 
     const lastX = xP + 50;
     
-    // LOGICA DI FILTRAGGIO ENTITIES (ENV o BRANCH)
     let entities = [];
     if (isEnvView) {
-        // Seleziona solo gli ambienti che hanno almeno un evento nel set filtrato
         const activeEnvs = new Set((data.events || []).map(ev => ev.env));
         entities = Object.keys(envColors).filter(env => activeEnvs.has(env));
     } else {
@@ -334,22 +331,48 @@ function render(data) {
         const y = yMap[targetEntity]; 
         if (y === undefined) return;
 
-        const dF = new Date(ev.dateFrom), dT = new Date(ev.dateTo);
-        if ((sV && dT < sV) || (eV && dF > eV)) return;
-        const vF = sV && dF < sV ? sV : dF, vT = eV && dT > eV ? eV : dT;
+        const realDF = new Date(ev.dateFrom), realDT = new Date(ev.dateTo);
+        if ((sV && realDT < sV) || (eV && realDF > eV)) return;
+
+        const vF = sV && realDF < sV ? sV : realDF;
+        const vT = eV && realDT > eV ? eV : realDT;
         const sK = vF.toISOString().split("T")[0], eK = vT.toISOString().split("T")[0];
-        const sG = grouped.find(g => g.date === sK), eG = grouped.find(g => g.date === eK);
         
+        const sG = grouped.find(g => g.date === sK), eG = grouped.find(g => g.date === eK);
         let xS = sG ? (isEnvView ? sG.startX + (sG.w/2) : sG.startX + sG.w) : 0, 
             xE = eG ? (isEnvView ? eG.startX + (eG.w/2) : eG.startX) : lastX;
         
         const rW = xE - xS; if (rW <= 0) return;
 
+        const isCutLeft = sV && realDF < sV;
+        const isCutRight = eV && realDT > eV;
         const evColor = envColors[ev.env] || "#ccc";
+        const h = 32; // altezza barra
+        const topY = y - h/2;
+
         const evG = g.append("g").style("cursor", "pointer").on("click", () => {
             openModal(`<div class="modal-title">${ev.label}</div><div class="modal-row"><span class="modal-label">Env:</span>${ev.env}</div><div class="modal-row"><span class="modal-label">Branch:</span>${ev.branch}</div><div class="modal-row"><span class="modal-label">From:</span>${formatDateSafe(ev.dateFrom)}</div><div class="modal-row"><span class="modal-label">To:</span>${formatDateSafe(ev.dateTo)}</div>`);
         });
-        evG.append("rect").attr("x", xS).attr("y", y-16).attr("width", rW).attr("height", 32).attr("fill", evColor).attr("fill-opacity", 0.15).attr("stroke", evColor).attr("rx", 4);
+
+        // 1. Corpo principale (senza bordi laterali)
+        evG.append("rect")
+            .attr("x", xS).attr("y", topY).attr("width", rW).attr("height", h)
+            .attr("fill", evColor).attr("fill-opacity", 0.12)
+            .attr("stroke", evColor).attr("stroke-width", 1.5)
+            .attr("stroke-dasharray", `${rW},${h},${rW},${h}`); // Solo bordi orizzontali (Sopra e Sotto)
+
+        // 2. Bordo Sinistro
+        const leftEdge = evG.append("line")
+            .attr("x1", xS).attr("y1", topY).attr("x2", xS).attr("y2", topY + h)
+            .attr("stroke", evColor).attr("stroke-width", 1.5);
+        if (isCutLeft) leftEdge.attr("stroke-dasharray", "4,3");
+
+        // 3. Bordo Destro
+        const rightEdge = evG.append("line")
+            .attr("x1", xS + rW).attr("y1", topY).attr("x2", xS + rW).attr("y2", topY + h)
+            .attr("stroke", evColor).attr("stroke-width", 1.5);
+        if (isCutRight) rightEdge.attr("stroke-dasharray", "4,3");
+
         evG.append("text").attr("x", xS + rW/2).attr("y", y+5).attr("text-anchor", "middle").style("font-size", "11px").style("font-weight", "600").text(ev.label);
     });
 
