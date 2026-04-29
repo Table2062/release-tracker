@@ -47,8 +47,27 @@ body { font-family: Inter, Arial, sans-serif; background: #f8fafc; margin: 0; pa
 
 #chart { display: block; flex-shrink: 0; }
 
-/* CONTROLLI */
+/* CONTROLLI (LOAD JSON & DATE FILTERS) */
 .top-controls { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+
+#loadJsonBtn { 
+    cursor: pointer; 
+    padding: 10px; 
+    border-radius: 8px; 
+    border: 1px solid #cbd5e1; 
+    background: white; 
+    color: #1e293b;
+    font-weight: 700; 
+    font-size: 13px;
+    margin-bottom: 5px; 
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+#loadJsonBtn:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+}
+
 .date-controls-wrapper {
     position: relative;
     background: white;
@@ -58,7 +77,22 @@ body { font-family: Inter, Arial, sans-serif; background: #f8fafc; margin: 0; pa
     display: flex;
     flex-direction: column;
     gap: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
+
+.date-group { display: flex; align-items: center; justify-content: space-between; }
+.date-group label { font-size: 12px; font-weight: 600; color: #475569; width: 45px; flex-shrink: 0; }
+.date-group input { 
+    font-family: inherit;
+    font-size: 11px; 
+    border: 1px solid #e2e8f0; 
+    border-radius: 4px; 
+    padding: 4px 6px; 
+    width: 100%; 
+    outline: none; 
+    color: #1e293b;
+}
+
 #resetDatesBtn {
     position: absolute;
     top: -10px;
@@ -73,19 +107,21 @@ body { font-family: Inter, Arial, sans-serif; background: #f8fafc; margin: 0; pa
     align-items: center;
     justify-content: center;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    font-size: 14px;
+    color: #64748b;
+    z-index: 10;
 }
 
 /* TIMELINE STYLES */
 .timeline-date { fill: #dbeafe; stroke: #93c5fd; }
 .timeline-text { font-size: 12px; font-weight: 700; fill: #1d4ed8; }
-
-/* TODAY CUSTOMIZATION (FIXED READABILITY) */
 .timeline-today-bg { fill: #ef4444 !important; stroke: #b91c1c !important; }
-.timeline-today-text { fill: #b91c1c !important; } /* Rosso scuro per contrasto su rosso chiaro */
+.timeline-today-text { fill: #b91c1c !important; } 
 .today-column-highlight { fill: #ef4444; fill-opacity: 0.08; }
 
-/* LEGENDA E DESCRIZIONE */
-.legend-box { padding: 10px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; }
+/* LEGENDA */
+.legend-title { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 5px; margin-left: 2px; }
+.legend-box { padding: 10px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 10px; }
 .legend-row { display: flex; align-items: center; gap: 6px; font-size: 12px; margin-bottom: 4px; }
 .legend-color { width: 10px; height: 10px; border-radius: 3px; }
 
@@ -98,73 +134,56 @@ body { font-family: Inter, Arial, sans-serif; background: #f8fafc; margin: 0; pa
     font-size: 13px;
     line-height: 1.5;
     color: #334155;
-    word-wrap: break-word;
 }
 
 /* TABELLA */
-.release-table-container { margin-top: 30px; width: 100%; overflow: hidden; }
+.release-table-container { margin-top: 30px; width: 100%; overflow: hidden; border-radius: 8px; border: 1px solid #e2e8f0; }
 #releaseTable { width: 100%; border-collapse: collapse; background: white; font-size: 11px; }
 #releaseTable th { background: #d97706; color: white; padding: 10px; text-align: left; font-weight: 600; }
-#releaseTable td { padding: 10px; border-top: 1px solid #eee; white-space: normal; word-wrap: break-word; vertical-align: top; line-height: 1.4; }
+#releaseTable td { padding: 10px; border-top: 1px solid rgba(0,0,0,0.05); vertical-align: top; line-height: 1.4; }
 
-.th-release { width: 180px; }
-.th-p1-deploy { width: 80px; }
-.th-branch { width: 120px; }
-.th-hybris-version { width: 100px; }
-.th-start-merge { width: 70px; font-size: 10px; }
-.th-start-stabilization { width: 70px; font-size: 10px; }
-.th-branch-unfreeze { width: 90px; }
-.th-note { width: 300px; }
-.th-scope { width: 300px; min-width: 300px; }
+/* COLORI RIGHE (LOGICA CICLICA) */
+.row-prev { background: #d1fae5 !important; }
+.row-current { background: #bfdbfe !important; }
+.row-next { background: #e5e7eb !important; }
 
+.row-cycle-0 { background: #fff1f2 !important; } 
+.row-cycle-1 { background: #fef9c3 !important; } 
+.row-cycle-2 { background: #f0fdf4 !important; } 
+.row-cycle-3 { background: #ecfeff !important; } 
+.row-cycle-4 { background: #f5f3ff !important; } 
+.row-cycle-5 { background: #fff7ed !important; } 
+.row-cycle-6 { background: #fafaf9 !important; } 
+.row-cycle-7 { background: #fdf2f8 !important; } 
+.row-cycle-8 { background: #f0f9ff !important; } 
+.row-cycle-9 { background: #fdf4ff !important; } 
+
+/* HEADER TABELLA SCOPE & CONTROLLI */
 .scope-header-content { display: flex; align-items: center; justify-content: space-between; height: 100%; }
-.scope-title { font-weight: 600; }
 .table-ctrl-wrap { display: flex; align-items: center; gap: 12px; }
 .t-counter { font-size: 11px; font-weight: 500; white-space: nowrap; background: rgba(0,0,0,0.1); padding: 2px 8px; border-radius: 12px; }
+
+.table-ctrl-wrap input { 
+    width: 50px; /* Aumentato per migliore visibilità */
+    font-size: 11px; 
+    border: none; 
+    border-radius: 3px; 
+    padding: 3px; 
+    text-align: center; 
+    font-weight: 700;
+}
 
 .t-nav { display: flex; gap: 4px; }
 .t-nav button { 
     background: white; border: 1px solid #cbd5e1; border-radius: 4px; color: #d97706; 
     font-size: 14px; padding: 4px 12px; cursor: pointer; line-height: 1; 
-    display: flex; align-items: center; justify-content: center; transition: background 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.1); 
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
-.t-nav button:hover { background: #fffbeb; border-color: #d97706; }
-.t-nav button.off { opacity: 0.2; cursor: not-allowed; background: #f8fafc; border-color: #e2e8f0; }
-
-/* COLORI RIGHE TABELLA */
-.row-prev { background: #d1fae5; }
-.row-current { background: #bfdbfe; }
-.row-next { background: #e5e7eb; }
-.row-cycle-0 { background: #fff1f2; } 
-.row-cycle-1 { background: #fef9c3; } 
-.row-cycle-2 { background: #f0fdf4; } 
-.row-cycle-3 { background: #ecfeff; } 
-.row-cycle-4 { background: #f5f3ff; } 
-.row-cycle-5 { background: #fff7ed; } 
-.row-cycle-6 { background: #fafaf9; } 
-.row-cycle-7 { background: #fdf2f8; } 
-.row-cycle-8 { background: #f0f9ff; } 
-.row-cycle-9 { background: #fdf4ff; } 
-
-#releaseTable tbody tr:hover { filter: contrast(0.9) brightness(0.95); transition: filter 0.15s; }
-
-/* DATE INPUTS */
-.date-group { display: flex; align-items: center; margin-bottom: 4px; }
-.date-group label { font-size: 12px; font-weight: 600; color: #475569; width: 45px; flex-shrink: 0; }
-.date-group input { font-size: 11px; border: 1px solid #e2e8f0; border-radius: 4px; padding: 3px; width: 100%; outline: none; }
+.t-nav button:hover { background: #fffbeb; }
 
 /* MODAL */
 .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 200; }
 .modal-overlay.active { display: flex; }
-.modal { background: white; border-radius: 16px; padding: 22px 24px; width: 420px; max-width: 90%; box-shadow: 0 20px 50px rgba(0,0,0,0.25); position: relative; animation: scaleIn 0.2s ease; }
+.modal { background: white; border-radius: 16px; padding: 22px 24px; width: 420px; box-shadow: 0 20px 50px rgba(0,0,0,0.25); position: relative; }
 .modal-close { position: absolute; top: 10px; right: 12px; border: none; background: transparent; font-size: 20px; cursor: pointer; color: #64748b; }
-.modal-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; color: #0f172a; }
-.modal-row { margin-bottom: 8px; font-size: 13px; }
-.modal-label { font-weight: 600; color: #475569; margin-right: 6px; }
-.modal-value { color: #0f172a; }
-
-@keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-/* UTILITY */
-.hidden { display: none; }
-#loadJsonBtn { cursor: pointer; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; font-weight: 600; margin-bottom: 5px; }

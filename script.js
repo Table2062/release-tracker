@@ -20,8 +20,8 @@ const BASE = {
     branchSpacing: 140,
     topOffset: 120,
     timelineOffset: 60,
-    CLUSTER_SPACING: 90,
-    CLUSTER_PADDING: 30,
+    CLUSTER_SPACING: 140, 
+    CLUSTER_PADDING: 50,  
     SINGLE_WIDTH: 70,
     MIN_OFFSET: 38,
     STEP_OFFSET: 14,
@@ -35,6 +35,14 @@ const colors = {
     fix: "#9C27B0",
     downstream: "#FFC107",
     upstream: "#607D8B"
+};
+
+const envColors = {
+    "D1": "#475569", 
+    "D2": "#A855F7", 
+    "S1": "#0D9488", 
+    "S2": "#eb259f", 
+    "P1": "#78001a" 
 };
 
 /* ========================= */
@@ -136,7 +144,7 @@ document.getElementById("resetDatesBtn").onclick = () => {
 function renderTable(tableData) {
     const table = d3.select("#releaseTable");
     if (!tableData || !Array.isArray(tableData)) { table.html(""); return; }
-    const total = totalRows = tableData.length;
+    const total = tableData.length;
     if (currentNumRows > total) currentNumRows = total;
 
     let end = total - tableStartIndex;
@@ -166,10 +174,10 @@ function renderTable(tableData) {
         });
 
     const nav = ctrlWrap.append("div").attr("class", "t-nav");
-    nav.append("button").html("&#9650;").classed("off", start <= 0).on("click", () => {
+    nav.append("button").html("&#9650;").on("click", () => {
         if (start > 0) { tableStartIndex++; render(filterData(currentData)); }
     });
-    nav.append("button").html("&#9660;").classed("off", tableStartIndex <= 0).on("click", () => {
+    nav.append("button").html("&#9660;").on("click", () => {
         if (tableStartIndex > 0) { tableStartIndex--; render(filterData(currentData)); }
     });
 
@@ -178,10 +186,13 @@ function renderTable(tableData) {
     items.forEach((d, i) => {
         let rowClass = "";
         const absoluteIdx = start + i;
+        
+        // Logica Colori Ciclica e Speciale
         if (absoluteIdx === total - 1) rowClass = "row-next";
         else if (absoluteIdx === total - 2) rowClass = "row-current";
         else if (absoluteIdx === total - 3) rowClass = "row-prev";
         else rowClass = "row-cycle-" + (absoluteIdx % 10);
+        
         const tr = tbody.append("tr").attr("class", rowClass);
         [d.release, d.p1Deploy, d.branch, d.hybrisVersion, d.startMerge, d.startStabilization, d.branchUnfreeze, d.note, d.scope]
         .forEach(text => tr.append("td").html(text ? text.replace(/\n/g, "<br>") : ""));
@@ -199,11 +210,21 @@ function render(data) {
     const stickyContainer = d3.select("#branch-labels-sticky").html("");
 
     const legendArea = d3.select("#legend").html("");
+    
+    legendArea.append("div").attr("class", "legend-title").text("Links & Branches");
     const legendBox = legendArea.append("div").attr("class", "legend-box");
     Object.entries(colors).forEach(([k, c]) => {
         const row = legendBox.append("div").attr("class", "legend-row");
         row.append("div").attr("class", "legend-color").style("background", c);
         row.append("div").text(k);
+    });
+
+    legendArea.append("div").attr("class", "legend-title").style("margin-top", "15px").text("Environments");
+    const envLegendBox = legendArea.append("div").attr("class", "legend-box");
+    Object.entries(envColors).forEach(([env, color]) => {
+        const row = envLegendBox.append("div").attr("class", "legend-row");
+        row.append("div").attr("class", "legend-color").style("background", color);
+        row.append("div").text(env);
     });
 
     if (data.description) {
@@ -217,15 +238,12 @@ function render(data) {
     const sV = sV_str ? new Date(sV_str) : null;
     const eV = eV_str ? new Date(eV_str) : null;
 
-    // DETERMINAZIONE DATA ODIERNA (ISO STRING LOCALE)
     const now = new Date();
     const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
     const tD = new Set();
     const todayObj = new Date(todayStr);
-    if ((!sV || todayObj >= sV) && (!eV || todayObj <= eV)) {
-        tD.add(todayStr);
-    }
+    if ((!sV || todayObj >= sV) && (!eV || todayObj <= eV)) tD.add(todayStr);
 
     (data.links || []).forEach(l => {
         const d = new Date(l.date);
@@ -250,20 +268,6 @@ function render(data) {
     });
 
     let xP = 20;
-    function measureLabelWidth(label) {
-        const temp = g.append("text").text(label).style("font-size", "12px");
-        const w = temp.node().getBBox().width; temp.remove();
-        return w;
-    }
-
-    let extraLeftPadding = 0, extraRightPadding = 0;
-    if (grouped.length > 0) {
-        const first = grouped[0], last = grouped[grouped.length - 1];
-        if (first.items.length > 0) extraLeftPadding = Math.max(...first.items.map(l => measureLabelWidth(l.label)))/2 + 20;
-        if (last.items.length > 0) extraRightPadding = Math.max(...last.items.map(l => measureLabelWidth(l.label)))/2 + 20;
-    }
-    xP += extraLeftPadding;
-
     const dateX = {};
     grouped.forEach((d, i) => {
         if (i !== 0) {
@@ -275,19 +279,14 @@ function render(data) {
         xP += d.w;
     });
 
-    const lastX = xP + 50 + extraRightPadding;
+    const lastX = xP + 50;
     const chartHeight = TO + (data.branches || []).length * BS;
     svg.attr("width", lastX).attr("height", chartHeight);
 
-    // --- RENDER HIGHLIGHT OGGI ---
     const todayData = grouped.find(g => g.date === todayStr);
     if (todayData) {
-        // Colonna semitrasparente
         g.append("rect")
-            .attr("x", todayData.startX)
-            .attr("y", TLO - 10)
-            .attr("width", todayData.w)
-            .attr("height", chartHeight - TLO + 10)
+            .attr("x", todayData.startX).attr("y", TLO - 10).attr("width", todayData.w).attr("height", chartHeight - TLO + 10)
             .attr("class", "today-column-highlight");
     }
 
@@ -297,21 +296,8 @@ function render(data) {
         const isToday = d.date === todayStr;
         const rectClass = isToday ? "timeline-date timeline-today-bg" : "timeline-date";
         const textClass = isToday ? "timeline-text timeline-today-text" : "timeline-text";
-
-        g.append("rect")
-            .attr("x", d.startX)
-            .attr("y", TLO-10)
-            .attr("width", d.w)
-            .attr("height", 20)
-            .attr("rx", 6)
-            .attr("class", rectClass);
-
-        g.append("text")
-            .attr("x", d.startX+d.w/2)
-            .attr("y", TLO-15)
-            .attr("text-anchor", "middle")
-            .attr("class", textClass)
-            .text(d3.timeFormat("%d %b %Y")(d.dObj));
+        g.append("rect").attr("x", d.startX).attr("y", TLO-10).attr("width", d.w).attr("height", 20).attr("rx", 6).attr("class", rectClass);
+        g.append("text").attr("x", d.startX+d.w/2).attr("y", TLO-15).attr("text-anchor", "middle").attr("class", textClass).text(d3.timeFormat("%d %b %Y")(d.dObj));
     });
 
     const bY = {};
@@ -330,12 +316,12 @@ function render(data) {
         const sG = grouped.find(g => g.date === sK), eG = grouped.find(g => g.date === eK);
         let xS = sG ? (sG.startX + sG.w) : 0, xE = eG ? eG.startX : lastX;
         const rW = xE - xS; if (rW <= 0) return;
+
+        const evColor = envColors[ev.env] || "#ccc";
         const evG = g.append("g").style("cursor", "pointer").on("click", () => {
-            openModal(`<div class="modal-title">${ev.label}</div><div class="modal-row"><span class="modal-label">Branch:</span><span class="modal-value">${ev.branch}</span></div><div class="modal-row"><span class="modal-label">From:</span><span class="modal-value">${formatDateSafe(ev.dateFrom)}</span></div><div class="modal-row"><span class="modal-label">To:</span><span class="modal-value">${formatDateSafe(ev.dateTo)}</span></div>`);
+            openModal(`<div class="modal-title">${ev.label}</div><div class="modal-row"><span class="modal-label">Env:</span>${ev.env}</div><div class="modal-row"><span class="modal-label">Branch:</span>${ev.branch}</div><div class="modal-row"><span class="modal-label">From:</span>${formatDateSafe(ev.dateFrom)}</div><div class="modal-row"><span class="modal-label">To:</span>${formatDateSafe(ev.dateTo)}</div>`);
         });
-        evG.append("rect").attr("x", xS).attr("y", y-16).attr("width", rW).attr("height", 32).attr("fill", ev.color).attr("fill-opacity", 0.15).attr("stroke", ev.color).attr("rx", 4);
-        if (sV && dF < sV) evG.append("line").attr("x1", xS).attr("x2", xS).attr("y1", y-16).attr("y2", y+16).attr("stroke", ev.color).attr("stroke-width", 2).attr("stroke-dasharray", "4,3");
-        if (eV && dT > eV) evG.append("line").attr("x1", xE).attr("x2", xE).attr("y1", y-16).attr("y2", y+16).attr("stroke", ev.color).attr("stroke-width", 2).attr("stroke-dasharray", "4,3");
+        evG.append("rect").attr("x", xS).attr("y", y-16).attr("width", rW).attr("height", 32).attr("fill", evColor).attr("fill-opacity", 0.15).attr("stroke", evColor).attr("rx", 4);
         evG.append("text").attr("x", xS + rW/2).attr("y", y+5).attr("text-anchor", "middle").style("font-size", "11px").style("font-weight", "600").text(ev.label);
     });
 
@@ -344,20 +330,30 @@ function render(data) {
         defs.append("marker").attr("id", "arrow-"+k).attr("viewBox", "0 0 10 10").attr("refX", 10).attr("refY", 5).attr("markerWidth", 6).attr("markerHeight", 6).attr("orient", "auto").append("path").attr("d", "M0 0 L10 5 L0 10Z").attr("fill", c);
     });
 
+    const linkLayer = g.append("g").attr("class", "links-layer");
     grouped.forEach(gr => {
         gr.items.forEach((l, i) => {
-            const x = gr.items.length === 1 ? dateX[gr.date] : gr.startX + BASE.CLUSTER_PADDING/2 + i*BASE.CLUSTER_SPACING;
+            const x = gr.items.length === 1 ? dateX[gr.date] : gr.startX + BASE.CLUSTER_PADDING / 2 + i * BASE.CLUSTER_SPACING;
             const y1 = bY[l.from], y2 = bY[l.to];
-            const midY = Math.abs(y2-y1) > BS*1.1 ? y1+(y2-y1)*0.675 : (y1+y2)/2;
-            const temp = g.append("text").text(l.label);
-            const w = temp.node().getBBox().width + 20; temp.remove();
-            g.append("line").attr("x1", x).attr("y1", y1).attr("x2", x).attr("y2", y2).attr("stroke", colors[l.type]||"#ccc").attr("stroke-width", 2).attr("marker-end", `url(#arrow-${l.type})`);
-            const el = g.append("g").style("cursor", "pointer").on("click", () => {
-                openModal(`<div class="modal-title">${l.label}</div><div class="modal-row"><span class="modal-label">Date:</span><span class="modal-value">${formatDateSafe(l.date)}</span></div><div class="modal-row"><span class="modal-label">From:</span><span class="modal-value">${l.from}</span></div><div class="modal-row"><span class="modal-label">To:</span><span class="modal-value">${l.to}</span></div><div class="modal-row"><span class="modal-label">Type:</span><span class="modal-value">${l.type}</span></div>${l.details ? `<div class="modal-row"><span class="modal-label">Details:</span><span class="modal-value">${l.details}</span></div>` : ""}`);
+            const midY = Math.abs(y2 - y1) > BS * 1.1 ? y1 + (y2 - y1) * 0.675 : (y1 + y2) / 2;
+            const color = colors[l.type] || "#ccc";
+
+            linkLayer.append("line").attr("x1", x).attr("y1", y1).attr("x2", x).attr("y2", y2).attr("stroke", color).attr("stroke-width", 2).attr("marker-end", `url(#arrow-${l.type})`);
+            
+            const temp = g.append("text").text(l.label).style("font-size", "11px").style("font-weight", "600");
+            const textW = temp.node().getBBox().width; temp.remove();
+            const dw = Math.max(textW + 85, 130), dh = 48;
+
+            const diamond = linkLayer.append("g").style("cursor", "pointer").on("click", () => {
+                openModal(`<div class="modal-title">${l.label}</div><div class="modal-row"><span class="modal-label">Date:</span>${l.date}</div><div class="modal-row"><span class="modal-label">From:</span>${l.from}</div><div class="modal-row"><span class="modal-label">To:</span>${l.to}</div><div class="modal-row"><span class="modal-label">Type:</span>${l.type}</div>`);
             });
-            el.append("rect").attr("x", x-w/2).attr("y", midY-18).attr("width", w).attr("height", 36).attr("rx", 10).attr("fill", colors[l.type]||"#ccc");
-            el.append("text").attr("x", x).attr("y", midY-2).attr("text-anchor", "middle").attr("fill", "white").style("font-size", "12px").text(l.label);
-            el.append("text").attr("x", x).attr("y", midY+10).attr("text-anchor", "middle").attr("fill", "white").style("font-size", "10px").text(formatDateSafe(l.date));
+            const hw = dw/2, hh = dh/2;
+            const hsl = d3.hsl(color);
+            const bgColor = d3.hsl(hsl.h, 0.3, 0.92).toString();
+
+            diamond.append("path").attr("d", `M${x-hw},${midY} L${x},${midY-hh} L${x+hw},${midY} L${x},${midY+hh} Z`).attr("fill", bgColor).attr("stroke", color).attr("stroke-width", 2.5);
+            diamond.append("text").attr("x", x).attr("y", midY+1).attr("text-anchor", "middle").style("font-size", "11px").style("font-weight", "700").attr("fill", "#1e293b").text(l.label);
+            diamond.append("text").attr("x", x).attr("y", midY+13).attr("text-anchor", "middle").style("font-size", "9px").style("font-weight", "600").attr("fill", "#475569").text(formatDateSafe(l.date));
         });
     });
 }
