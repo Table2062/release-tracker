@@ -16,6 +16,36 @@ function formatDateSafe(d) {
     return date.toISOString().split("T")[0];
 }
 
+/* Nuova funzione per generare contenuto modale dinamico */
+function generateModalHtml(title, obj) {
+    const skipFields = ['startX', 'startY', 'w', 'h', 'dObj']; 
+    
+    let rowsHtml = Object.entries(obj)
+        .filter(([key]) => !skipFields.includes(key))
+        .map(([key, value]) => {
+            // Formattazione label: dateFrom -> Date From
+            const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+            
+            // Formattazione valore: se è una data ISO, puliscila
+            let displayValue = value;
+            if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}/)) {
+                displayValue = formatDateSafe(value);
+            }
+            if (value === null || value === undefined) displayValue = "-";
+
+            return `
+                <div class="modal-row">
+                    <span class="modal-label">${label}:</span>
+                    <span class="modal-value">${displayValue}</span>
+                </div>`;
+        }).join('');
+
+    return `
+        <div class="modal-title">${title}</div>
+        <div class="modal-body-content">${rowsHtml}</div>
+    `;
+}
+
 const BASE = {
     branchSpacing: 140,
     topOffset: 120,
@@ -347,27 +377,25 @@ function render(data) {
         const isCutLeft = sV && realDF < sV;
         const isCutRight = eV && realDT > eV;
         const evColor = envColors[ev.env] || "#ccc";
-        const h = 32; // altezza barra
+        const h = 32; 
         const topY = y - h/2;
 
         const evG = g.append("g").style("cursor", "pointer").on("click", () => {
-            openModal(`<div class="modal-title">${ev.label}</div><div class="modal-row"><span class="modal-label">Env:</span>${ev.env}</div><div class="modal-row"><span class="modal-label">Branch:</span>${ev.branch}</div><div class="modal-row"><span class="modal-label">From:</span>${formatDateSafe(ev.dateFrom)}</div><div class="modal-row"><span class="modal-label">To:</span>${formatDateSafe(ev.dateTo)}</div>`);
+            // MODIFICATO: Usa la funzione dinamica
+            openModal(generateModalHtml(ev.label || "Event Details", ev));
         });
 
-        // 1. Corpo principale (senza bordi laterali)
         evG.append("rect")
             .attr("x", xS).attr("y", topY).attr("width", rW).attr("height", h)
             .attr("fill", evColor).attr("fill-opacity", 0.12)
             .attr("stroke", evColor).attr("stroke-width", 1.5)
-            .attr("stroke-dasharray", `${rW},${h},${rW},${h}`); // Solo bordi orizzontali (Sopra e Sotto)
+            .attr("stroke-dasharray", `${rW},${h},${rW},${h}`);
 
-        // 2. Bordo Sinistro
         const leftEdge = evG.append("line")
             .attr("x1", xS).attr("y1", topY).attr("x2", xS).attr("y2", topY + h)
             .attr("stroke", evColor).attr("stroke-width", 1.5);
         if (isCutLeft) leftEdge.attr("stroke-dasharray", "4,3");
 
-        // 3. Bordo Destro
         const rightEdge = evG.append("line")
             .attr("x1", xS + rW).attr("y1", topY).attr("x2", xS + rW).attr("y2", topY + h)
             .attr("stroke", evColor).attr("stroke-width", 1.5);
@@ -399,7 +427,8 @@ function render(data) {
                 const dw = Math.max(textW + 85, 130), dh = 48;
 
                 const diamond = linkLayer.append("g").style("cursor", "pointer").on("click", () => {
-                    openModal(`<div class="modal-title">${l.label}</div><div class="modal-row"><span class="modal-label">Date:</span>${l.date}</div><div class="modal-row"><span class="modal-label">From:</span>${l.from}</div><div class="modal-row"><span class="modal-label">To:</span>${l.to}</div><div class="modal-row"><span class="modal-label">Type:</span>${l.type}</div>`);
+                    // MODIFICATO: Usa la funzione dinamica
+                    openModal(generateModalHtml(l.label || "Merge/Link Details", l));
                 });
                 const hw = dw/2, hh = dh/2;
                 const hsl = d3.hsl(color);
